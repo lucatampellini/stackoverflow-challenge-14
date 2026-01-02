@@ -1,6 +1,7 @@
 package org.example.core;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -137,8 +138,10 @@ public class SequenceAnalyzer {
     }
 
     private void handleLeftOverSignals() {
-        //if you see that leftover signals might contain another signal, you have to set the genuine signal apart and check the sequence again
-        //TODO ...
+        //to noise
+        Arrays.stream(Arrays.copyOfRange(sortedSequence, positionCounter.get(), sortedSequence.length))
+                .boxed()
+                .forEach(this.noise::add);
     }
 
 }
