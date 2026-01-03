@@ -12,7 +12,7 @@ import java.nio.file.Path;
 public class Main {
     public static void main(String[] args) throws IOException, URISyntaxException {
 
-        try(final var lines = Files.lines(Path.of(ClassLoader.getSystemResource("additional-number-sequences").toURI()))) {
+        try(final var lines = Files.lines(Path.of(ClassLoader.getSystemResource("number-sequences").toURI()))) {
             lines.map(StringContainingArray::new)
                     .map(StringContainingArray::extractContent)
                     .map(SequenceAnalyzerFactory::make)
