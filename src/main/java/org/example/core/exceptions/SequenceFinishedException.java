@@ -1,4 +1,4 @@
-package org.example.core;
+package org.example.core.exceptions;
 
 import java.util.function.Consumer;
 
@@ -10,7 +10,7 @@ abstract class SequenceFinishedException extends RuntimeException {
         this.endVal = endVal;
         this.whatToDoWithTheValue = whatToDoWithTheValue;
     }
-    protected void processLastValue() {
+    public void processLastValue() {
         whatToDoWithTheValue.accept(endVal);
     }
 }

@@ -1,40 +1,42 @@
-package org.example.core;
+package org.example.core.logic;
 
-import org.apache.commons.lang3.ArrayUtils;
+import org.example.core.exceptions.ExtractedSequenceFinishedException;
+import org.example.core.exceptions.OriginalSequenceFinishedException;
+import org.example.core.exceptions.SequenceStartedException;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
-public class SequenceAnalyzer {
+import static org.example.core.logic.Constants.*;
+import static org.example.core.logic.Constants.CORRECT_SIGNAL_DISTANCE;
 
-    private static final int DUPLICATE_SIGNAL_DISTANCE = 0,
-            CORRECT_SIGNAL_DISTANCE = 1,
-            MISSING_SIGNAL_DISTANCE = 2;
+class SequenceExtractor {
 
-    private final Integer[] originalSortedSequence;
-
+    private final Integer[] sequenceToAnalyse;
     private final LinkedList<ExtractedSequence> extractedSequences;
 
-    private final AtomicInteger positionCounter;
+    private final AtomicInteger originalSequenceCounter, currentSequenceCounter;
 
-    protected SequenceAnalyzer(int... sequenceToAnalyse) {
+    protected SequenceExtractor(Integer... sequenceToAnalyse) {
         super();
-        this.originalSortedSequence = IntStream.of(sequenceToAnalyse)
-                .sorted()
-                .boxed()
-                .toArray(Integer[]::new);
+        this.sequenceToAnalyse = sequenceToAnalyse;
         this.extractedSequences = new LinkedList<>();
-        this.positionCounter = new AtomicInteger(); // resetCounter() sets the value to 0
+        this.originalSequenceCounter = new AtomicInteger(0);
+        this.currentSequenceCounter = new AtomicInteger(0);
     }
 
-    public SequenceAnalysis process() {
+    protected List<ExtractedSequence> extractSequences() {
+        //iterates over the original sequence with originalSequenceCounter
 
-        this.resetCounter();
+        final var posOnOriginalSequence = this.originalSequenceCounter.getAndIncrement();
+        this.currentSequenceCounter.set(posOnOriginalSequence);
         this.setupNewSequence();
 
-        //walk the array
+        //extract one sequence, by walking over the array from posOnOriginalSequence
         try {
             walk();
         } catch (OriginalSequenceFinishedException e) {
@@ -45,42 +47,30 @@ public class SequenceAnalyzer {
             }
         }
 
-        //compare all extracted sequences
-        final var validSignal = compareSequencesForValidSignal();
-        final var validSequence = validSignal.sequence.toArray(Integer[]::new);
+        if (this.originalSequenceCounter.get() < sequenceToAnalyse.length) {
+            //recursion
+            this.extractSequences();
+        }
 
-        //deduce noise as all but the validSignal
-        final var noise = ArrayUtils.removeElements(originalSortedSequence, validSequence);
-
-        //produce result
-        return new SequenceAnalysis(
-                validSignal.sequence.getFirst(),
-                validSignal.sequence.getLast(),
-                validSignal.missing.orElse(null),
-                validSignal.duplicate.orElse(null),
-                noise
-        );
-
-    }
-
-    private synchronized void resetCounter() {
-        this.positionCounter.set(0);
+        return this.extractedSequences;
     }
 
     private void walk() throws OriginalSequenceFinishedException {
-        try{
+        //iterates over the original sequence with currentSequenceCounter
+
+        try {
             //evaluation on current element
             //take current position
-            final var currentPos = this.positionCounter.getAndIncrement();
+            final var posOnCurrentSequence = this.currentSequenceCounter.getAndIncrement();
             //take current value
-            final var currentVal = originalSortedSequence[currentPos];
+            final var currentVal = sequenceToAnalyse[posOnCurrentSequence];
 
             //evaluation on relation of current element to the next
-            //check if next available
-            if (currentPos+1 >= originalSortedSequence.length) {
+            //check if we reached end of sequence
+            if (posOnCurrentSequence + 1 >= sequenceToAnalyse.length) {
                 //last element
                 //action on it depends on how it compares with the last correct signal
-                try{
+                try {
                     final var action = determineActionForCurrentVal(distanceFromLastSignal(currentVal));
                     throw new OriginalSequenceFinishedException(currentVal, action);
                 } catch (SequenceStartedException e) {
@@ -90,7 +80,7 @@ public class SequenceAnalyzer {
 
             }
             //conditional branching depending on distance from next value in the sorted sequence
-            determineActionForCurrentVal(distanceToNextValInSequence(currentPos)).accept(currentVal);
+            determineActionForCurrentVal(distanceToNextValInSequence(posOnCurrentSequence)).accept(currentVal);
         } catch (ExtractedSequenceFinishedException e) {
             e.processLastValue();
             this.setupNewSequence();
@@ -99,19 +89,13 @@ public class SequenceAnalyzer {
         walk();
     }
 
-    private ExtractedSequence compareSequencesForValidSignal() {
-        return this.extractedSequences.stream()
-                .sorted(ExtractedSequence::compareTo)
-                .findFirst()
-                .orElseThrow(IllegalStateException::new);
-    }
-
     private void setupNewSequence() {
         this.extractedSequences.add(new ExtractedSequence());
     }
 
+
     private int distanceToNextValInSequence(final int currentPos) {
-        return Math.abs(originalSortedSequence[currentPos] - originalSortedSequence[currentPos + 1]);
+        return Math.abs(sequenceToAnalyse[currentPos] - sequenceToAnalyse[currentPos + 1]);
     }
 
     private int distanceFromLastSignal(final int currentVal) throws SequenceStartedException {
@@ -134,7 +118,10 @@ public class SequenceAnalyzer {
 
     private void missingSignal(final int currentVal) throws ExtractedSequenceFinishedException {
         final var missingSignal = currentVal + 1;
-        if (this.extractedSequences.getLast().missing.isEmpty()) this.extractedSequences.getLast().missing = Optional.of(missingSignal);
+        if (this.extractedSequences.getLast().missing.isEmpty()) {
+            this.correctSignal(currentVal);
+            this.extractedSequences.getLast().missing = Optional.of(missingSignal);
+        }
         else throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
     }
 
@@ -143,16 +130,17 @@ public class SequenceAnalyzer {
     }
 
     private void duplicateSignal(final int currentVal) {
-        if (this.extractedSequences.getLast().duplicate.isEmpty()) this.extractedSequences.getLast().duplicate = Optional.of(currentVal);
+        if (this.extractedSequences.getLast().duplicate.isEmpty())
+            this.extractedSequences.getLast().duplicate = Optional.of(currentVal);
         else potentialNoise(currentVal);
     }
 
     private void potentialNoise(final int currentVal) throws ExtractedSequenceFinishedException {
         try {
             //verify that it does not fit in the existing sequence
-            if (distanceFromLastSignal(currentVal) == CORRECT_SIGNAL_DISTANCE) this.correctSignal(currentVal);
+            if (distanceFromLastSignal(currentVal) == CORRECT_SIGNAL_DISTANCE) throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
             else noiseSignal(currentVal);
-        }  catch (SequenceStartedException e) {
+        } catch (SequenceStartedException e) {
             //it is noise
             noiseSignal(currentVal);
         }
@@ -160,27 +148,8 @@ public class SequenceAnalyzer {
 
     private void noiseSignal(final int currentVal) throws ExtractedSequenceFinishedException {
         //when noise ascertained, move on to next sequence
-        throw new ExtractedSequenceFinishedException(currentVal, val -> {});
-    }
-
-}
-
-class ExtractedSequence implements Comparable<ExtractedSequence> {
-
-    protected Optional<Integer> duplicate,
-            missing;
-
-    protected LinkedList<Integer> sequence;
-
-    protected ExtractedSequence() {
-        this.duplicate = Optional.empty();
-        this.missing = Optional.empty();
-        this.sequence = new LinkedList<>();
-    }
-
-    @Override
-    public int compareTo(ExtractedSequence o) {
-        return this.sequence.size() > o.sequence.size() ? -1 : 1;   //setup in descending order
+        throw new ExtractedSequenceFinishedException(currentVal, val -> {
+        });
     }
 
 }

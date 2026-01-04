@@ -1,7 +1,7 @@
 package org.example;
 
-import org.example.core.SequenceAnalyzer;
-import org.example.core.SequenceAnalyzerFactory;
+import org.example.core.logic.ISequenceAnalyzer;
+import org.example.core.logic.SequenceAnalyzerFactory;
 import org.example.utils.StringContainingArray;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ public class Main {
             lines.map(StringContainingArray::new)
                     .map(StringContainingArray::extractContent)
                     .map(SequenceAnalyzerFactory::make)
-                    .map(SequenceAnalyzer::process)
+                    .map(ISequenceAnalyzer::process)
                     .peek(resultingSumCounter::addAnalysis)
                     .forEach(System.out::println);
         };
