@@ -110,7 +110,7 @@ class SequenceExtractor {
                 case DUPLICATE_SIGNAL_DISTANCE -> this::duplicateSignal;
                 case CORRECT_SIGNAL_DISTANCE -> this::correctSignal;
                 case MISSING_SIGNAL_DISTANCE -> this::missingSignal;
-                default -> this::potentialNoise;
+                default -> this::noiseSignal;
             };
         } catch (SequenceStartedException e) {
             //if the sequence just started, then signal is assumed to be correct
@@ -135,19 +135,6 @@ class SequenceExtractor {
         if (this.extractedSequences.getLast().duplicate.isEmpty())
             this.extractedSequences.getLast().duplicate = Optional.of(currentVal);
         else noiseSignal(currentVal);
-    }
-
-    private void potentialNoise(final int currentVal) throws ExtractedSequenceFinishedException {
-        try {
-            //verify that it does not fit in the existing sequence
-            if (distanceFromLastSignal(currentVal) <= MISSING_SIGNAL_DISTANCE) {
-                throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
-            }
-            else noiseSignal(currentVal);
-        } catch (SequenceStartedException e) {
-            //it is noise
-            noiseSignal(currentVal);
-        }
     }
 
     private void noiseSignal(final int currentVal) throws ExtractedSequenceFinishedException {
