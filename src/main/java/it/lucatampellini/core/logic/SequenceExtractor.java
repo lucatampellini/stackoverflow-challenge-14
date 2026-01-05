@@ -1,8 +1,8 @@
-package org.example.core.logic;
+package it.lucatampellini.core.logic;
 
-import org.example.core.exceptions.ExtractedSequenceFinishedException;
-import org.example.core.exceptions.OriginalSequenceFinishedException;
-import org.example.core.exceptions.SequenceStartedException;
+import it.lucatampellini.core.exceptions.OriginalSequenceFinishedException;
+import it.lucatampellini.core.exceptions.SequenceStartedException;
+import it.lucatampellini.core.exceptions.ExtractedSequenceFinishedException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -10,9 +10,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-
-import static org.example.core.logic.Constants.*;
-import static org.example.core.logic.Constants.CORRECT_SIGNAL_DISTANCE;
 
 class SequenceExtractor {
 
@@ -107,9 +104,9 @@ class SequenceExtractor {
             //conditional branching, depending on distance from last signal in the extracted sequence
             final var distance = distanceFromLastSignal(currentVal);
             return switch (distance) {
-                case DUPLICATE_SIGNAL_DISTANCE -> this::duplicateSignal;
-                case CORRECT_SIGNAL_DISTANCE -> this::correctSignal;
-                case MISSING_SIGNAL_DISTANCE -> this::missingSignal;
+                case Constants.DUPLICATE_SIGNAL_DISTANCE -> this::duplicateSignal;
+                case Constants.CORRECT_SIGNAL_DISTANCE -> this::correctSignal;
+                case Constants.MISSING_SIGNAL_DISTANCE -> this::missingSignal;
                 default -> this::noiseSignal;
             };
         } catch (SequenceStartedException e) {

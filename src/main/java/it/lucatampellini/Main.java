@@ -1,8 +1,8 @@
-package org.example;
+package it.lucatampellini;
 
-import org.example.core.logic.ISequenceAnalyzer;
-import org.example.core.logic.SequenceAnalyzerFactory;
-import org.example.utils.StringContainingArray;
+import it.lucatampellini.core.logic.ISequenceAnalyzer;
+import it.lucatampellini.utils.StringContainingArray;
+import it.lucatampellini.core.logic.SequenceAnalyzerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;

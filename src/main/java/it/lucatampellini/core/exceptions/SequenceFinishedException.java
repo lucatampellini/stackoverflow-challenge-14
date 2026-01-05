@@ -1,4 +1,4 @@
-package org.example.core.exceptions;
+package it.lucatampellini.core.exceptions;
 
 import java.util.function.Consumer;
 

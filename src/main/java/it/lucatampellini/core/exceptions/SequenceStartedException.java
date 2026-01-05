@@ -1,4 +1,4 @@
-package org.example.core.exceptions;
+package it.lucatampellini.core.exceptions;
 
 public class SequenceStartedException extends RuntimeException {
     private final int firstVal;

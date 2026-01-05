@@ -1,6 +1,6 @@
-package org.example;
+package it.lucatampellini;
 
-import org.example.core.SequenceAnalysis;
+import it.lucatampellini.core.SequenceAnalysis;
 
 class ResultingSum {
     private volatile int sum;
