@@ -1,7 +1,7 @@
-package org.example.core.logic;
+package it.lucatampellini.core.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.example.core.SequenceAnalysis;
+import it.lucatampellini.core.SequenceAnalysis;
 
 import java.util.*;
 import java.util.stream.IntStream;

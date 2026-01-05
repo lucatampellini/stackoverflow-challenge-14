@@ -1,6 +1,6 @@
-package org.example.core.logic;
+package it.lucatampellini.core.logic;
 
-import org.example.core.SequenceAnalysis;
+import it.lucatampellini.core.SequenceAnalysis;
 
 @FunctionalInterface
 public interface ISequenceAnalyzer {

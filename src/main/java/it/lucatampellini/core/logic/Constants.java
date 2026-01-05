@@ -1,4 +1,4 @@
-package org.example.core.logic;
+package it.lucatampellini.core.logic;
 
 class Constants {
 

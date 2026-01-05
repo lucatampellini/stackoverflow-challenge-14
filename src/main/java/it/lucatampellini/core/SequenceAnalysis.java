@@ -1,4 +1,4 @@
-package org.example.core;
+package it.lucatampellini.core;
 
 import java.util.Arrays;
 import java.util.List;
