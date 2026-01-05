@@ -65,26 +65,21 @@ class SequenceExtractor {
             //take current value
             final var currentVal = sequenceToAnalyse[posOnCurrentSequence];
 
-            //evaluation on relation of current element to the next
-            //check if we reached end of sequence
-            if (posOnCurrentSequence + 1 >= sequenceToAnalyse.length) {
-                //last element
-                //action on it depends on how it compares with the last correct signal
-                try {
-                    final var action = determineActionForCurrentVal(distanceFromLastSignal(currentVal));
-                    throw new OriginalSequenceFinishedException(currentVal, action);
-                } catch (SequenceStartedException e) {
-                    //if we fall here, the original sequence was made of a single item
-                    throw new OriginalSequenceFinishedException(currentVal, this::correctSignal);
-                }
+            //evaluation on relation of current element to the previous
+            final var action = determineActionForCurrentVal(currentVal);
 
+            //check if we reached end of sequence, before activating the action
+            if (posOnCurrentSequence + 1 >= sequenceToAnalyse.length) {
+                throw new OriginalSequenceFinishedException(currentVal, action);
+            } else {
+                action.accept(currentVal);
             }
-            //conditional branching depending on distance from next value in the sorted sequence
-            determineActionForCurrentVal(distanceToNextValInSequence(posOnCurrentSequence)).accept(currentVal);
+
         } catch (ExtractedSequenceFinishedException e) {
             e.processLastValue();
             this.setupNewSequence();
         }
+
         //recursion
         walk();
     }
@@ -93,7 +88,7 @@ class SequenceExtractor {
         this.extractedSequences.add(new ExtractedSequence());
     }
 
-
+    @Deprecated(forRemoval = true)
     private int distanceToNextValInSequence(final int currentPos) {
         return Math.abs(sequenceToAnalyse[currentPos] - sequenceToAnalyse[currentPos + 1]);
     }
@@ -107,22 +102,29 @@ class SequenceExtractor {
         }
     }
 
-    private Consumer<Integer> determineActionForCurrentVal(final int distanceFromSensibleVal) {
-        return switch (distanceFromSensibleVal) {
-            case DUPLICATE_SIGNAL_DISTANCE -> this::duplicateSignal;
-            case CORRECT_SIGNAL_DISTANCE -> this::correctSignal;
-            case MISSING_SIGNAL_DISTANCE -> this::missingSignal;
-            default -> this::potentialNoise;
-        };
+    private Consumer<Integer> determineActionForCurrentVal(final int currentVal) {
+        try {
+            //conditional branching, depending on distance from last signal in the extracted sequence
+            final var distance = distanceFromLastSignal(currentVal);
+            return switch (distance) {
+                case DUPLICATE_SIGNAL_DISTANCE -> this::duplicateSignal;
+                case CORRECT_SIGNAL_DISTANCE -> this::correctSignal;
+                case MISSING_SIGNAL_DISTANCE -> this::missingSignal;
+                default -> this::potentialNoise;
+            };
+        } catch (SequenceStartedException e) {
+            //if the sequence just started, then signal is assumed to be correct
+            return this::correctSignal;
+        }
     }
 
     private void missingSignal(final int currentVal) throws ExtractedSequenceFinishedException {
-        final var missingSignal = currentVal + 1;
+        final var missingSignal = currentVal - 1;   //the value between this and the last signal
         if (this.extractedSequences.getLast().missing.isEmpty()) {
             this.correctSignal(currentVal);
             this.extractedSequences.getLast().missing = Optional.of(missingSignal);
         }
-        else throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
+        else noiseSignal(currentVal);
     }
 
     private void correctSignal(final int currentVal) {
@@ -132,13 +134,15 @@ class SequenceExtractor {
     private void duplicateSignal(final int currentVal) {
         if (this.extractedSequences.getLast().duplicate.isEmpty())
             this.extractedSequences.getLast().duplicate = Optional.of(currentVal);
-        else potentialNoise(currentVal);
+        else noiseSignal(currentVal);
     }
 
     private void potentialNoise(final int currentVal) throws ExtractedSequenceFinishedException {
         try {
             //verify that it does not fit in the existing sequence
-            if (distanceFromLastSignal(currentVal) <= MISSING_SIGNAL_DISTANCE) throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
+            if (distanceFromLastSignal(currentVal) <= MISSING_SIGNAL_DISTANCE) {
+                throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
+            }
             else noiseSignal(currentVal);
         } catch (SequenceStartedException e) {
             //it is noise
@@ -148,8 +152,7 @@ class SequenceExtractor {
 
     private void noiseSignal(final int currentVal) throws ExtractedSequenceFinishedException {
         //when noise ascertained, move on to next sequence
-        throw new ExtractedSequenceFinishedException(currentVal, val -> {
-        });
+        throw new ExtractedSequenceFinishedException(currentVal);
     }
 
 }
