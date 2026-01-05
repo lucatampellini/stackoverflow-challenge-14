@@ -138,7 +138,7 @@ class SequenceExtractor {
     private void potentialNoise(final int currentVal) throws ExtractedSequenceFinishedException {
         try {
             //verify that it does not fit in the existing sequence
-            if (distanceFromLastSignal(currentVal) == CORRECT_SIGNAL_DISTANCE) throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
+            if (distanceFromLastSignal(currentVal) <= MISSING_SIGNAL_DISTANCE) throw new ExtractedSequenceFinishedException(currentVal, this::correctSignal);
             else noiseSignal(currentVal);
         } catch (SequenceStartedException e) {
             //it is noise
