@@ -85,11 +85,6 @@ class SequenceExtractor {
         this.extractedSequences.add(new ExtractedSequence());
     }
 
-    @Deprecated(forRemoval = true)
-    private int distanceToNextValInSequence(final int currentPos) {
-        return Math.abs(sequenceToAnalyse[currentPos] - sequenceToAnalyse[currentPos + 1]);
-    }
-
     private int distanceFromLastSignal(final int currentVal) throws SequenceStartedException {
         try {
             return Math.abs(currentVal - this.extractedSequences.getLast().sequence.getLast());

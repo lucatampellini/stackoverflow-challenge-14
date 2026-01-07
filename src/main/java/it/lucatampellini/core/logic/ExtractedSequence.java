@@ -8,7 +8,7 @@ class ExtractedSequence implements Comparable<ExtractedSequence> {
     protected Optional<Integer> duplicate,
             missing;
 
-    protected LinkedList<Integer> sequence;
+    protected final LinkedList<Integer> sequence;
 
     protected ExtractedSequence() {
         this.duplicate = Optional.empty();

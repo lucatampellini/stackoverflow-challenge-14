@@ -25,10 +25,8 @@ class SequenceAnalyzer implements ISequenceAnalyzer{
     @Override
     public SequenceAnalysis process() {
 
-        new SequenceExtractor(originalSortedSequence)
-                .extractSequences()
-                .stream()
-                .forEach(extractedSequences::add);
+        extractedSequences.addAll(new SequenceExtractor(originalSortedSequence)
+                .extractSequences());
 
         //compare all extracted sequences
         final var validSignal = compareSequencesForValidSignal();
